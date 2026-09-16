@@ -44,6 +44,30 @@ class SettingsViewModel @Inject constructor(
     private val requiredPermissions = MutableStateFlow(PermissionGroup.missingRequired(appContext))
     private val batteryExempt = MutableStateFlow(isBatteryExempt())
 
+    init {
+        // Auto-convergence: toggling call notifications on BEFORE the
+        // prerequisites are met only records the desire; the moment they become
+        // met (Telegram configured, permissions granted) the service starts by
+        // itself — no second toggle needed. A manual Stop is respected: the
+        // convergence fires on the ready-state *transition* only, never while
+        // ready stays true.
+        viewModelScope.launch {
+            var previousReady = isCallMonitoringReady()
+            combine(
+                requiredPermissions.asStateFlow(),
+                monitorStatus.running,
+                settingsRepository.settings,
+            ) { missingRequired, running, s ->
+                Triple(s.callNotificationEnabled, missingRequired.isEmpty() && s.isConfigured, running)
+            }.collect { (toggleOn, ready, running) ->
+                if (shouldAutoStartCallMonitoring(previousReady, ready, toggleOn, running)) {
+                    serviceController.startCallMonitoring()
+                }
+                previousReady = ready
+            }
+        }
+    }
+
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsRepository.settings,
         permissions.asStateFlow(),
@@ -109,10 +133,21 @@ class SettingsViewModel @Inject constructor(
 
     fun setSmsForwardingEnabled(enabled: Boolean) = settingsRepository.setSmsForwardingEnabled(enabled)
 
-    /** Toggling call notifications also starts/stops the foreground service. */
+    /**
+     * Toggling call notifications also starts/stops the foreground service —
+     * but starting respects the same gate as the Start button: an
+     * unconfigured/unpermitted service is useless. When the prerequisites are
+     * met later, the auto-convergence collector in [init] starts it instead.
+     */
     fun setCallNotificationEnabled(enabled: Boolean) {
         settingsRepository.setCallNotificationEnabled(enabled)
-        if (enabled) serviceController.startCallMonitoring() else serviceController.stopCallMonitoring()
+        if (!enabled) {
+            serviceController.stopCallMonitoring()
+            return
+        }
+        if (isCallMonitoringReady() && !monitorStatus.running.value) {
+            serviceController.startCallMonitoring()
+        }
     }
 
     fun setMissedCallNotificationEnabled(enabled: Boolean) =
@@ -144,5 +179,24 @@ class SettingsViewModel @Inject constructor(
 
     private fun clearTestResult() {
         testResult.value = null
+    }
+
+    private fun isCallMonitoringReady(): Boolean =
+        requiredPermissions.value.isEmpty() && settingsRepository.current().isConfigured
+
+    companion object {
+
+        /**
+         * Pure decision for the auto-convergence collector, visible for tests:
+         * start only when the toggle is on, the prerequisites JUST became met,
+         * and the service is not already running — a deliberate Stop (ready
+         * stays true, service down) is never overridden.
+         */
+        fun shouldAutoStartCallMonitoring(
+            previousReady: Boolean,
+            ready: Boolean,
+            callToggleOn: Boolean,
+            running: Boolean,
+        ): Boolean = callToggleOn && ready && !running && !previousReady
     }
 }

@@ -88,6 +88,14 @@ AGP yükseltmeden önce Studio'nun AGP uyum tablosunu kontrol et; gerekirse
   pazarlama SMS'inde yanlış buton üretti ("4000 TL'ye varan ParaPuan" →
   "4000" kopyalanıyordu). Anahtar kelime kapısı şart: sayıdan önce
   kod/doğrulama/code/otp/pin/şifre ifadesi aranır.
+- **2026-09-16** (gerçek cihaz) "Gelen arama bildirimleri" toggle'ı
+  canStart'sız servis başlatıyordu → engelli durumda bile "Durdur" aktifti.
+  Toggle aynı gate'i kullanır + ready-geçişinde otomatik yakınsama (yalnız
+  geçişte: `shouldAutoStartCallMonitoring` — manuel Stop'a saygı, ready true
+  kaldıkça asla yeniden başlatmaz).
+- **2026-09-16** (gerçek cihaz) Sideload APK'da SMS/CallLog izni
+  kilitlenince açma yolu README Kurulum adımına işlendi (Ayarlar →
+  Uygulamalar → ⋮ → Kısıtlanmış izinlere izin ver).
 
 ## Güvenlik kuralları
 

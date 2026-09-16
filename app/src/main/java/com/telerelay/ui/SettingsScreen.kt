@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -35,14 +36,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -139,6 +143,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                FooterMeta(Modifier.align(Alignment.CenterHorizontally))
                 Spacer(Modifier.size(24.dp))
             }
         }
@@ -183,8 +188,10 @@ private fun ServiceStatusCard(
             )
         }
 
-        // One caption per blocking reason — never color alone.
-        if (!canStart) {
+        // One caption per blocking reason — never color alone. Suppressed while
+        // the service is genuinely running: "working" + "blocked" at once reads
+        // as a contradiction (a running service is still useful to stop).
+        if (!running && !canStart) {
             if (missingRequiredPermissions.isNotEmpty()) {
                 BlockReason(stringResource(R.string.status_reason_perms))
             }
@@ -257,6 +264,33 @@ private fun BlockReason(text: String) {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.error,
     )
+}
+
+private const val GITHUB_URL = "https://github.com/eneskaradeniz"
+
+@Composable
+private fun FooterMeta(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val version = remember(context) {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull().orEmpty()
+    }
+    Row(modifier = modifier) {
+        Text(
+            text = "TeleRelay $version · ",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "eneskaradeniz",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier.clickable { uriHandler.openUri(GITHUB_URL) },
+        )
+    }
 }
 
 @Composable
