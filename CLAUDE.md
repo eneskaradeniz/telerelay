@@ -130,11 +130,10 @@ AGP yükseltmeden önce Studio'nun AGP uyum tablosunu kontrol et; gerekirse
   uygulama güncellemesi yüklenemez, yeni imza "farklı uygulama" sayılır.
   Yedeklemesini kullanıcıya hatırlat.
 - ⏳ Bekleyen işler:
-  1. Revizyon commit + push (kullanıcı onayı gerekli)
-  2. Gerçek cihazda tam tur: SMS iletme (compact format + kişi adı + SIM),
-     gelen arama, cevapsız arama, reboot sonrası servis, dil değişimi, pil butonu
-  3. Release imzalama yapılandırması yok (bilinçli; `*.keystore` gitignore'da)
-  4. İlk release tag'i + APK yayını
+  1. Reboot sonrası servis otomatik başlama testi — cihazda fiziksel deneme
+     gerektirir
+  2. Sonraki release'ler: versionName/versionCode bump + `git tag vX.Y.Z` +
+     signed `app-release.apk`'ı Releases'e yükle (imza local keystore'dan)
 
 ## Dosya haritası (hızlı)
 
