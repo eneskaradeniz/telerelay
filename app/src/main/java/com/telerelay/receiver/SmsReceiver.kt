@@ -42,7 +42,19 @@ class SmsReceiver : BroadcastReceiver() {
             body = body,
             receivedAtMillis = clock.nowMillis(),
             segmentCount = messages.size,
+            // Undocumented platform extra; best-effort input for the SIM marker
+            // on multi-SIM devices. Absent/absurd values degrade to null.
+            subscriptionId = intent.getIntExtra(SUBSCRIPTION_EXTRA, Int.MIN_VALUE)
+                .takeIf { it != Int.MIN_VALUE },
         )
         scope.launch { forwardSms(sms) }
+    }
+
+    private companion object {
+        /**
+         * Not part of the public SDK — every shipping platform puts the delivering
+         * subscription id under this key, but it may disappear or be absent.
+         */
+        const val SUBSCRIPTION_EXTRA = "subscription"
     }
 }

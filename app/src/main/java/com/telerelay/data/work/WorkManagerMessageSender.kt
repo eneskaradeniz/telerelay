@@ -9,6 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.telerelay.data.crypto.SecretCipher
+import com.telerelay.domain.model.OutgoingMessage
 import com.telerelay.domain.model.SendOutcome
 import com.telerelay.domain.port.MessageSender
 import com.telerelay.domain.port.TelegramGateway
@@ -32,21 +33,26 @@ class WorkManagerMessageSender @Inject constructor(
     private val cipher: SecretCipher,
 ) : MessageSender {
 
-    override suspend fun sendOrEnqueue(text: String) {
-        when (gateway.send(text)) {
+    override suspend fun sendOrEnqueue(message: OutgoingMessage) {
+        when (gateway.send(message)) {
             is SendOutcome.Sent -> Unit
-            is SendOutcome.RetryLater -> enqueue(text)
+            is SendOutcome.RetryLater -> enqueue(message)
             // Permanent (bad token / chat): retrying cannot help; the settings
             // screen surfaces the configuration error to the user instead.
             is SendOutcome.Failed -> Unit
         }
     }
 
-    private fun enqueue(text: String) {
+    private fun enqueue(message: OutgoingMessage) {
         // WorkManager persists its Data payload to disk — store the message
         // encrypted so SMS content never lands in plaintext on the device.
         val request = OneTimeWorkRequestBuilder<ForwardWorker>()
-            .setInputData(workDataOf(ForwardWorker.KEY_TEXT to cipher.encrypt(text)))
+            .setInputData(
+                workDataOf(
+                    ForwardWorker.KEY_TEXT to cipher.encrypt(message.text),
+                    ForwardWorker.KEY_COPY_TEXT to message.copyText?.let(cipher::encrypt),
+                ),
+            )
             .setConstraints(
                 Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)

@@ -123,4 +123,87 @@ class CallStateMachineTest {
 
         assertNull(notification)
     }
+
+    // --- broadcast-captured numbers (the API 31+ ringing-time source) --------
+
+    @Test
+    fun `broadcast number arriving before ringing is attached to the incoming notification`() {
+        machine.onIncomingNumber(CallState.RINGING, "+905550001122", atMillis = 900)
+
+        val notification = ring(at = 1_000)
+
+        assertEquals(CallNotification.Incoming("+905550001122", 1_000), notification)
+    }
+
+    @Test
+    fun `stale broadcast number is ignored`() {
+        machine.onIncomingNumber(CallState.RINGING, "+905550001122", atMillis = 0)
+
+        val notification = ring(at = 20_000) // beyond the freshness window
+
+        assertEquals(CallNotification.Incoming(null, 20_000), notification)
+    }
+
+    @Test
+    fun `blank broadcast numbers are ignored`() {
+        machine.onIncomingNumber(CallState.RINGING, "  ", atMillis = 900)
+
+        val notification = ring(at = 1_000)
+
+        assertEquals(CallNotification.Incoming(null, 1_000), notification)
+    }
+
+    @Test
+    fun `numbers riding an idle or offhook broadcast are ignored`() {
+        // The IDLE broadcast of a finished call often still carries its number;
+        // storing it would mislabel the NEXT caller.
+        machine.onIncomingNumber(CallState.IDLE, "+905550001122", atMillis = 300)
+        machine.onIncomingNumber(CallState.OFFHOOK, "+905550009988", atMillis = 400)
+
+        val notification = ring(at = 5_000) // well within the freshness window
+
+        assertEquals(CallNotification.Incoming(null, 5_000), notification)
+    }
+
+    @Test
+    fun `broadcast number landing during the ring is used by the missed notification`() {
+        assertEquals(CallNotification.Incoming(null, 1_000), ring(at = 1_000))
+
+        machine.onIncomingNumber(CallState.RINGING, "+905550001122", atMillis = 2_000)
+
+        clock.set(25_000) // ring lasted 24 s — beyond freshness, but mid-ring arrival wins
+        assertEquals(CallNotification.Missed("+905550001122"), machine.onEvent(event(CallState.IDLE)))
+    }
+
+    @Test
+    fun `unconsumed mid-ring number from an answered call does not attach to the next ring`() {
+        ring(at = 1_000) // no number at ring time
+        machine.onIncomingNumber(CallState.RINGING, "+905550001122", atMillis = 2_000) // lands mid-ring
+        clock.set(6_000)
+        machine.onEvent(event(CallState.OFFHOOK)) // call A answered — number never consumed
+        clock.set(20_000)
+        machine.onEvent(event(CallState.IDLE)) // call A ends
+
+        clock.set(30_000)
+        val notification = ring(at = 30_000) // call B
+
+        assertEquals(CallNotification.Incoming(null, 30_000), notification)
+    }
+
+    @Test
+    fun `broadcast number is consumed once`() {
+        machine.onIncomingNumber(CallState.RINGING, "+905550001122", atMillis = 900)
+
+        ring(at = 1_000)
+
+        assertNull(machine.takeBroadcastNumber(nowMillis = 1_500, forRingStart = false))
+    }
+
+    @Test
+    fun `reset forgets the broadcast number`() {
+        machine.onIncomingNumber(CallState.RINGING, "+905550001122", atMillis = 900)
+        machine.reset()
+
+        assertNull(machine.peekBroadcastNumber(nowMillis = 1_000))
+    }
 }

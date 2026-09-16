@@ -16,9 +16,9 @@ window you already keep open all day.
   interface.
 - **Minimal by design.** One screen, three layers of clean architecture,
   and nothing stored on the device except your settings.
-- **Private even against itself.** An optional privacy guard detects OTP/2FA
-  codes and bank-transaction SMS and either masks the secrets (`482913` →
-  `••••••`) or drops the message entirely, before it ever leaves the phone.
+- **One-tap OTP copy.** Messages containing a verification code get Telegram's
+  native "copy code" button. (iOS/macOS system-wide SMS autofill is closed to
+  third-party apps — this is the fastest legal path.)
 - **Transparent reliability.** SMS forwarding works even when the app process
   is dead (system broadcasts wake it). Call monitoring runs behind a
   persistent, low-priority notification and restarts itself after reboot.
@@ -27,24 +27,25 @@ window you already keep open all day.
 
 | Feature | Details |
 |---|---|
-| SMS forwarding | Multipart (long) messages are reassembled into one Telegram message; SIM slot included on dual-SIM devices |
-| Incoming calls | "Who is calling" notification the moment the phone rings |
+| SMS forwarding | Multipart (long) messages are reassembled into one Telegram message; saved contacts appear by name instead of number |
+| SIM marker | Only on multi-SIM devices, and only when the delivering SIM is known (`· SIM2`) |
+| Incoming calls | "Who is calling" notification the moment the phone rings, with the contact name when saved |
 | Missed calls | Separate `☎️` notification when a call rings out unanswered |
-| Privacy guard | Regex filter (editable) for OTP codes and bank messages — mask or exclude |
-| Number filter | Never forward messages from chosen numbers |
+| OTP copy button | When a verification code is detected, Telegram's one-tap copy button is attached to the message |
 | Retry queue | Failed deliveries are queued in WorkManager with exponential backoff; Telegram's `retry_after` is honoured |
-| Languages | English and Turkish, switchable in-app |
+| Languages | English and Turkish — follows the device language (English by default) |
 | Battery | One-tap request to exempt the app from battery optimisation |
 
-Message format:
+Message format — envelope-free, like the SMS itself:
 
 ```
-📩 Yeni SMS
-Kimden: +90 555 000 11 22
-Zaman: 14:03:22
-SIM: SIM1 (Vodafone)
-Mesaj: Hello world
+📩 E-DEVLET · SIM2
+Dogrulama kodunuz : 814067  Bu mesaj e-Devlet Kapisi ...
 ```
+
+Saved senders appear by name, unknown ones by number. There is no time line —
+Telegram already renders the message time. The SIM marker is omitted on
+single-SIM devices.
 
 ## Setup
 
@@ -95,10 +96,12 @@ Requirements: JDK 17+ and an Android SDK with platform 37.
 | Permission | Why it is needed |
 |---|---|
 | `RECEIVE_SMS`, `READ_SMS` | Receive the incoming-SMS broadcast and read its content to forward it |
-| `READ_PHONE_STATE` | Detect ringing/missed call state; read SIM slot for dual-SIM info |
+| `READ_PHONE_STATE` | Detect ringing/missed call state; read the SIM slot on multi-SIM devices |
 | `READ_CALL_LOG` | On Android 12+ the system hides the caller number from call events. TeleRelay looks up the number of the *current* call only, transiently — no call history is stored or forwarded |
-| `READ_PHONE_NUMBERS` | Optional SIM identification (`SIM: SIM1 (Vodafone)`) |
+| `READ_CONTACTS` | Show the contact name instead of a raw number in forwarded messages. Names are looked up on the device only; nothing is stored or forwarded beyond the message itself |
+| `READ_PHONE_NUMBERS` | Optional SIM identification (`· SIM1`) |
 | `POST_NOTIFICATIONS` | The persistent notification that keeps call monitoring alive |
+| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Lets the in-app button open the battery-exemption dialog (used only when you tap it) |
 | `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE` | The foreground service type; `specialUse` is the only type meant for an indefinite background relay (others carry runtime limits or require media/telephony semantics) |
 | `RECEIVE_BOOT_COMPLETED` | Restart call monitoring after reboot |
 
@@ -111,7 +114,8 @@ Requirements: JDK 17+ and an Android SDK with platform 37.
 - No analytics, no crash reporting, no ads, no tracking, no extra servers.
 - WorkManager retry payloads are encrypted too — message content never touches
   disk in plaintext.
-- The privacy guard (mask/exclude) runs **before** anything leaves the device.
+- Contact names are resolved on the device only; the contacts list is read but
+  never stored, and nothing beyond the message itself is forwarded.
 
 ## Architecture
 
@@ -120,8 +124,8 @@ points that delegate to use cases:
 
 ```
 domain/   models, ports (interfaces), pure-Kotlin logic + use cases  ← unit-tested
-data/     Retrofit gateway, Keystore crypto, settings store, regex filter,
-          telephony monitors, WorkManager sender
+data/     Retrofit gateway, Keystore crypto, settings store, contact-name
+          resolver, telephony monitors, WorkManager sender
 ui/       Compose (Material 3) settings screen + ViewModel
 receiver/ service/ worker/  thin Android entry points
 ```
@@ -130,14 +134,23 @@ Design decisions of note: `specialUse` foreground-service type (the `dataSync`
 type is killed after 6 h/day since Android 15); multipart-SMS reassembly via a
 per-sender quiet window (concatenation headers are not exposed to non-default
 SMS apps); caller numbers on API 31+ are resolved from the call log because the
-platform stopped delivering them in call-state callbacks.
+platform stopped delivering them in call-state callbacks; messages are sent
+with HTML parse mode, and detected OTP codes ride Telegram's `copy_text`
+button for one-tap copying.
 
 ## Limitations
 
-- SMS content arrives with up to ~5 s extra delay only when a message was
-  split into multiple parts (merging window); single-part messages are instant.
+- Every SMS waits out a ~5 s merging window: without UDH access a complete
+  single-part message is indistinguishable from the first segment of a
+  concatenated one. Only messages delivered as one multi-PDU broadcast are
+  instant.
 - On Android 12+ the caller number can be unknown if the call-log row has not
-  been written yet — the message then reads `Arayan: Bilinmiyor`.
+  been written yet — the message then reads `Bilinmiyor`.
+- On multi-SIM devices call notifications do not show which SIM rang — the
+  public API carries no subscription on call events; SMS shows the SIM when it
+  is known.
+- The OTP copy button picks the most likely code and can rarely latch onto the
+  wrong digit group.
 - TeleRelay cannot see MMS, and it never reads or forwards *outgoing* messages.
 
 ## License

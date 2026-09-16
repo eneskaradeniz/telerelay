@@ -11,11 +11,16 @@ import com.telerelay.R
 /**
  * Runtime permissions TeleRelay needs, grouped the way they are requested.
  * Each group carries its own user-facing rationale shown before the prompt.
+ *
+ * [requiredForService] marks the groups without which call monitoring cannot
+ * run; purely cosmetic permissions (contact names) are still requested in the
+ * UI but must not block starting the service.
  */
 enum class PermissionGroup(
     val permissions: List<String>,
     @StringRes val titleRes: Int,
     @StringRes val rationaleRes: Int,
+    val requiredForService: Boolean = true,
 ) {
     SMS(
         permissions = listOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS),
@@ -35,6 +40,14 @@ enum class PermissionGroup(
         titleRes = R.string.perm_group_calllog_title,
         rationaleRes = R.string.perm_group_calllog_rationale,
     ),
+    CONTACTS(
+        permissions = listOf(Manifest.permission.READ_CONTACTS),
+        titleRes = R.string.perm_group_contacts_title,
+        rationaleRes = R.string.perm_group_contacts_rationale,
+        // Contact names are decoration: a user who declines it must still be
+        // able to start call monitoring.
+        requiredForService = false,
+    ),
     NOTIFICATIONS(
         permissions = listOf(Manifest.permission.POST_NOTIFICATIONS),
         titleRes = R.string.perm_group_notifications_title,
@@ -51,6 +64,10 @@ enum class PermissionGroup(
         /** Groups the user still has to grant, in request order. */
         fun missing(context: Context): List<PermissionGroup> = entries
             .filter { it.isNotRequiredOnThisApi() || !it.isGranted(context) }
+
+        /** Missing groups that gate starting the call-monitoring service. */
+        fun missingRequired(context: Context): List<PermissionGroup> =
+            missing(context).filter { it.requiredForService }
 
         private fun PermissionGroup.isNotRequiredOnThisApi() =
             this == NOTIFICATIONS && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU

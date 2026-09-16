@@ -3,9 +3,9 @@ package com.telerelay.di
 import android.content.Context
 import android.os.Build
 import com.telerelay.core.AndroidClock
+import com.telerelay.data.contact.PhoneLookupContactNameResolver
 import com.telerelay.data.crypto.KeystoreAesGcmCipher
 import com.telerelay.data.crypto.SecretCipher
-import com.telerelay.data.privacy.RegexPrivacyFilter
 import com.telerelay.data.service.AndroidServiceController
 import com.telerelay.data.settings.SettingsRepositoryImpl
 import com.telerelay.data.sim.SubscriptionSimInfoProvider
@@ -19,9 +19,9 @@ import com.telerelay.domain.logic.MultipartSmsAssembler
 import com.telerelay.domain.port.CallMonitor
 import com.telerelay.domain.port.CallerNumberResolver
 import com.telerelay.domain.port.Clock
+import com.telerelay.domain.port.ContactNameResolver
 import com.telerelay.domain.port.MessageFormatter
 import com.telerelay.domain.port.MessageSender
-import com.telerelay.domain.port.PrivacyFilter
 import com.telerelay.domain.port.ServiceController
 import com.telerelay.domain.port.SettingsRepository
 import com.telerelay.domain.port.SimInfoProvider
@@ -32,12 +32,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import java.time.ZoneId
 import javax.inject.Singleton
 
 /**
  * Maps domain ports to their data-layer implementations. Swapping an
- * implementation (e.g. retry-capable sender, regex filter) only changes a line here.
+ * implementation (e.g. retry-capable sender, SIM provider) only changes a line here.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -61,10 +60,6 @@ abstract class AppModule {
 
     @Binds
     @Singleton
-    abstract fun privacyFilter(impl: RegexPrivacyFilter): PrivacyFilter
-
-    @Binds
-    @Singleton
     abstract fun secretCipher(impl: KeystoreAesGcmCipher): SecretCipher
 
     @Binds
@@ -77,16 +72,16 @@ abstract class AppModule {
 
     @Binds
     @Singleton
+    abstract fun contactNameResolver(impl: PhoneLookupContactNameResolver): ContactNameResolver
+
+    @Binds
+    @Singleton
     abstract fun serviceController(impl: AndroidServiceController): ServiceController
 
     @Binds
     abstract fun messageFormatter(impl: MessageFormatterImpl): MessageFormatter
 
     companion object {
-
-        @Provides
-        @Singleton
-        fun zoneId(): ZoneId = ZoneId.systemDefault()
 
         @Provides
         @Singleton

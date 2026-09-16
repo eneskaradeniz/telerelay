@@ -10,10 +10,13 @@ package com.telerelay.domain.model
  * @param segmentCount  number of PDUs in the delivering broadcast. Concatenated messages
  *                      usually arrive as several single-PDU broadcasts; a broadcast that
  *                      already carries several PDUs is treated as a complete message.
+ * @param subscriptionId best-effort id of the SIM that received the message (undocumented
+ *                      "subscription" broadcast extra); null when the platform omits it.
  */
 data class IncomingSms(
     val sender: String,
     val body: String,
     val receivedAtMillis: Long,
     val segmentCount: Int = 1,
+    val subscriptionId: Int? = null,
 )

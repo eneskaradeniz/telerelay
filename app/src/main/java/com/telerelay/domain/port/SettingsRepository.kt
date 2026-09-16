@@ -1,7 +1,6 @@
 package com.telerelay.domain.port
 
 import com.telerelay.domain.model.AppSettings
-import com.telerelay.domain.model.PrivacyMode
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -19,9 +18,4 @@ interface SettingsRepository {
     fun setSmsForwardingEnabled(enabled: Boolean)
     fun setCallNotificationEnabled(enabled: Boolean)
     fun setMissedCallNotificationEnabled(enabled: Boolean)
-    fun setPrivacyGuardEnabled(enabled: Boolean)
-    fun setPrivacyMode(mode: PrivacyMode)
-    fun setFilterPatterns(patterns: List<String>)
-    fun setExcludedNumbers(numbers: List<String>)
-    fun setLanguageTag(tag: String?)
 }

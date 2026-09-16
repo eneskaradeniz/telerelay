@@ -11,27 +11,26 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -40,9 +39,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -53,13 +53,19 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.telerelay.R
 import com.telerelay.domain.model.FailureReason
-import com.telerelay.domain.model.PrivacyMode
+import com.telerelay.ui.components.InlineStatus
+import com.telerelay.ui.components.InlineStatusState
+import com.telerelay.ui.components.SectionCard
+import com.telerelay.ui.components.StatusDot
+import com.telerelay.ui.components.ToggleRow
 
 /**
- * The single screen of the app. Sections, top to bottom: permissions,
- * Telegram credentials, forwarding toggles, privacy guard, service control,
- * language. Every change is persisted immediately.
+ * The single screen, grouped "Calm Groups" style: one status card first
+ * (is it running? what is blocked?), then permissions, forwarding toggles and
+ * Telegram credentials — four flat, identical cards. Every change is persisted
+ * immediately; there is no save button. The app language follows the device.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -79,99 +85,213 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { viewModel.refreshPermissions() }
 
-    Scaffold { padding ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            PermissionsSection(
-                missing = state.missingPermissions,
-                onGrant = {
-                    val toRequest = it.permissions.toTypedArray()
-                    permissionLauncher.launch(toRequest)
-                },
-            )
+            Column(
+                modifier = Modifier.widthIn(max = 640.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                ServiceStatusCard(
+                    running = state.callMonitoringRunning,
+                    missingRequiredPermissions = state.missingRequiredPermissions,
+                    isConfigured = state.settings.isConfigured,
+                    batteryExempt = state.batteryExempt,
+                    onStart = viewModel::startCallMonitoring,
+                    onStop = viewModel::stopCallMonitoring,
+                )
 
-            CredentialsSection(
-                token = state.settings.botToken.orEmpty(),
-                chatId = state.settings.chatId.orEmpty(),
-                testResult = state.testResult,
-                onTokenChange = viewModel::setBotToken,
-                onChatIdChange = viewModel::setChatId,
-                onTest = viewModel::sendTestMessage,
-            )
+                PermissionsCard(
+                    missing = state.missingPermissions,
+                    onGrant = { permissionLauncher.launch(it.permissions.toTypedArray()) },
+                )
 
-            ForwardingSection(
-                smsEnabled = state.settings.smsForwardingEnabled,
-                callsEnabled = state.settings.callNotificationEnabled,
-                missedEnabled = state.settings.missedCallNotificationEnabled,
-                onSmsChange = viewModel::setSmsForwardingEnabled,
-                onCallsChange = viewModel::setCallNotificationEnabled,
-                onMissedChange = viewModel::setMissedCallNotificationEnabled,
-            )
+                ForwardingCard(
+                    smsEnabled = state.settings.smsForwardingEnabled,
+                    callsEnabled = state.settings.callNotificationEnabled,
+                    missedEnabled = state.settings.missedCallNotificationEnabled,
+                    onSmsChange = viewModel::setSmsForwardingEnabled,
+                    onCallsChange = viewModel::setCallNotificationEnabled,
+                    onMissedChange = viewModel::setMissedCallNotificationEnabled,
+                )
 
-            PrivacyGuardSection(
-                enabled = state.settings.privacyGuardEnabled,
-                mode = state.settings.privacyMode,
-                patterns = state.settings.filterPatterns,
-                excludedNumbers = state.settings.excludedNumbers,
-                onEnabledChange = viewModel::setPrivacyGuardEnabled,
-                onModeChange = viewModel::setPrivacyMode,
-                onAddPattern = viewModel::addFilterPattern,
-                onRemovePattern = viewModel::removeFilterPattern,
-                onAddNumber = viewModel::addExcludedNumber,
-                onRemoveNumber = viewModel::removeExcludedNumber,
-            )
+                TelegramCard(
+                    token = state.settings.botToken.orEmpty(),
+                    tokenPreview = state.botTokenPreview,
+                    chatId = state.settings.chatId.orEmpty(),
+                    testResult = state.testResult,
+                    onTokenChange = viewModel::setBotToken,
+                    onChatIdChange = viewModel::setChatId,
+                    onTest = viewModel::sendTestMessage,
+                )
 
-            ServiceSection(
-                running = state.callMonitoringRunning,
-                canStart = state.missingPermissions.isEmpty() && state.settings.isConfigured,
-                batteryExempt = state.batteryExempt,
-                onStart = viewModel::startCallMonitoring,
-                onStop = viewModel::stopCallMonitoring,
-            )
-
-            LanguageSection(
-                currentTag = state.languageTag,
-                onSelect = viewModel::setLanguage,
-            )
-
-            Text(
-                text = stringResource(R.string.footer_privacy_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.footer_privacy_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.size(24.dp))
+            }
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-// Sections
+// Cards
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun PermissionsSection(
+private fun ServiceStatusCard(
+    running: Boolean,
+    missingRequiredPermissions: List<PermissionGroup>,
+    isConfigured: Boolean,
+    batteryExempt: Boolean,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+) {
+    val context = LocalContext.current
+    var batteryRequestFailed by rememberSaveable { mutableStateOf(false) }
+    val canStart = missingRequiredPermissions.isEmpty() && isConfigured
+
+    SectionCard(title = stringResource(R.string.section_service)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusDot(
+                color = when {
+                    running -> MaterialTheme.colorScheme.primary
+                    canStart -> MaterialTheme.colorScheme.outline
+                    else -> MaterialTheme.colorScheme.error
+                },
+            )
+            Text(
+                text = stringResource(
+                    when {
+                        running -> R.string.service_status_active
+                        canStart -> R.string.service_status_stopped
+                        else -> R.string.service_status_blocked
+                    },
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+
+        // One caption per blocking reason — never color alone.
+        if (!canStart) {
+            if (missingRequiredPermissions.isNotEmpty()) {
+                BlockReason(stringResource(R.string.status_reason_perms))
+            }
+            if (!isConfigured) {
+                BlockReason(stringResource(R.string.status_reason_config))
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = onStart, enabled = canStart && !running, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.action_start))
+            }
+            OutlinedButton(onClick = onStop, enabled = running, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.action_stop))
+            }
+        }
+
+        // Battery exemption row: title + state text, trailing action when needed.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.battery_row_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                val supporting: String? = when {
+                    batteryExempt -> stringResource(R.string.battery_ok)
+                    batteryRequestFailed -> stringResource(R.string.battery_request_failed)
+                    else -> null
+                }
+                if (supporting != null) {
+                    Text(
+                        text = supporting,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (batteryRequestFailed && !batteryExempt) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+            }
+            if (!batteryExempt) {
+                TextButton(onClick = {
+                    // Requires REQUEST_IGNORE_BATTERY_OPTIMIZATIONS in the manifest;
+                    // without it the system throws SecurityException here.
+                    batteryRequestFailed = runCatching {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                Uri.parse("package:${context.packageName}"),
+                            ),
+                        )
+                    }.isFailure
+                }) { Text(stringResource(R.string.action_exempt)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BlockReason(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+    )
+}
+
+@Composable
+private fun PermissionsCard(
     missing: List<PermissionGroup>,
     onGrant: (PermissionGroup) -> Unit,
 ) {
     SectionCard(title = stringResource(R.string.perm_section_title)) {
         if (missing.isEmpty()) {
-            Text(stringResource(R.string.perm_all_granted), style = MaterialTheme.typography.bodyMedium)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_check),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(stringResource(R.string.perm_all_granted), style = MaterialTheme.typography.bodyLarge)
+            }
         } else {
             missing.forEach { group ->
                 Column(Modifier.fillMaxWidth()) {
-                    Text(stringResource(group.titleRes), style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(group.titleRes), style = MaterialTheme.typography.bodyLarge)
                     Text(
                         stringResource(group.rationaleRes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
                     )
-                    TextButton(onClick = { onGrant(group) }) {
+                    FilledTonalButton(onClick = { onGrant(group) }) {
                         Text(stringResource(R.string.perm_action_grant))
                     }
                 }
@@ -181,8 +301,9 @@ private fun PermissionsSection(
 }
 
 @Composable
-private fun CredentialsSection(
+private fun TelegramCard(
     token: String,
+    tokenPreview: String?,
     chatId: String,
     testResult: TestResult?,
     onTokenChange: (String) -> Unit,
@@ -197,13 +318,13 @@ private fun CredentialsSection(
             label = { Text(stringResource(R.string.field_bot_token)) },
             singleLine = true,
             visualTransformation = if (showToken) VisualTransformation.None else PasswordVisualTransformation(),
+            supportingText = tokenPreview?.let { preview -> { Text(stringResource(R.string.field_token_saved, preview)) } },
+            keyboardOptions = KeyboardOptions(autoCorrect = false, keyboardType = KeyboardType.Ascii),
             trailingIcon = {
                 IconButton(onClick = { showToken = !showToken }) {
                     Icon(
-                        painter = androidx.compose.ui.res.painterResource(
-                            if (showToken) R.drawable.ic_visibility_off else R.drawable.ic_visibility,
-                        ),
-                        contentDescription = null,
+                        painter = painterResource(if (showToken) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
+                        contentDescription = stringResource(R.string.action_toggle_token_visibility),
                     )
                 }
             },
@@ -214,9 +335,13 @@ private fun CredentialsSection(
             onValueChange = onChatIdChange,
             label = { Text(stringResource(R.string.field_chat_id)) },
             singleLine = true,
+            // Chat IDs are numeric but can be negative (groups): plain ASCII, not Number.
+            keyboardOptions = KeyboardOptions(autoCorrect = false, keyboardType = KeyboardType.Ascii),
             modifier = Modifier.fillMaxWidth(),
         )
-        Button(onClick = onTest) { Text(stringResource(R.string.action_test)) }
+        Button(onClick = onTest, enabled = testResult !is TestResult.Sending, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.action_test))
+        }
         TestResultRow(testResult)
     }
 }
@@ -224,8 +349,14 @@ private fun CredentialsSection(
 @Composable
 private fun TestResultRow(testResult: TestResult?) {
     when (testResult) {
-        is TestResult.Sending -> StatusText(stringResource(R.string.test_sending), MaterialTheme.colorScheme.onSurfaceVariant)
-        is TestResult.Success -> StatusText(stringResource(R.string.test_ok), MaterialTheme.colorScheme.primary)
+        TestResult.Sending -> InlineStatus(
+            text = stringResource(R.string.test_sending),
+            state = InlineStatusState.IN_PROGRESS,
+        )
+        TestResult.Success -> InlineStatus(
+            text = stringResource(R.string.test_ok),
+            state = InlineStatusState.SUCCESS,
+        )
         is TestResult.Failure -> {
             val text = when (testResult.reason) {
                 FailureReason.INVALID_TOKEN -> R.string.test_failed_token
@@ -233,14 +364,14 @@ private fun TestResultRow(testResult: TestResult?) {
                 FailureReason.NOT_CONFIGURED -> R.string.test_not_configured
                 FailureReason.REJECTED, null -> R.string.test_failed_network
             }
-            StatusText(stringResource(text), MaterialTheme.colorScheme.error)
+            InlineStatus(text = stringResource(text), state = InlineStatusState.ERROR)
         }
         null -> Unit
     }
 }
 
 @Composable
-private fun ForwardingSection(
+private fun ForwardingCard(
     smsEnabled: Boolean,
     callsEnabled: Boolean,
     missedEnabled: Boolean,
@@ -253,285 +384,19 @@ private fun ForwardingSection(
             label = stringResource(R.string.toggle_sms),
             hint = stringResource(R.string.toggle_sms_hint),
             checked = smsEnabled,
-            onChange = onSmsChange,
+            onCheckedChange = onSmsChange,
         )
         ToggleRow(
             label = stringResource(R.string.toggle_calls),
             hint = stringResource(R.string.toggle_calls_hint),
             checked = callsEnabled,
-            onChange = onCallsChange,
+            onCheckedChange = onCallsChange,
         )
         ToggleRow(
             label = stringResource(R.string.toggle_missed),
-            hint = null,
+            hint = stringResource(R.string.toggle_missed_hint),
             checked = missedEnabled,
-            onChange = onMissedChange,
+            onCheckedChange = onMissedChange,
         )
-    }
-}
-
-@Composable
-private fun PrivacyGuardSection(
-    enabled: Boolean,
-    mode: PrivacyMode,
-    patterns: List<String>,
-    excludedNumbers: List<String>,
-    onEnabledChange: (Boolean) -> Unit,
-    onModeChange: (PrivacyMode) -> Unit,
-    onAddPattern: (String) -> Unit,
-    onRemovePattern: (String) -> Unit,
-    onAddNumber: (String) -> Unit,
-    onRemoveNumber: (String) -> Unit,
-) {
-    SectionCard(title = stringResource(R.string.section_privacy)) {
-        ToggleRow(
-            label = stringResource(R.string.toggle_privacy),
-            hint = null,
-            checked = enabled,
-            onChange = onEnabledChange,
-        )
-
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            SegmentedButton(
-                selected = mode == PrivacyMode.MASK,
-                onClick = { onModeChange(PrivacyMode.MASK) },
-                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                enabled = enabled,
-            ) { Text(stringResource(R.string.privacy_mode_mask)) }
-            SegmentedButton(
-                selected = mode == PrivacyMode.EXCLUDE,
-                onClick = { onModeChange(PrivacyMode.EXCLUDE) },
-                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                enabled = enabled,
-            ) { Text(stringResource(R.string.privacy_mode_exclude)) }
-        }
-
-        ListEditor(
-            title = stringResource(R.string.privacy_patterns),
-            items = patterns,
-            emptyText = stringResource(R.string.privacy_empty),
-            addLabel = stringResource(R.string.privacy_field_pattern),
-            addActionLabel = stringResource(R.string.privacy_add),
-            removeLabel = stringResource(R.string.privacy_remove),
-            enabled = enabled,
-            onAdd = onAddPattern,
-            onRemove = onRemovePattern,
-        )
-        ListEditor(
-            title = stringResource(R.string.privacy_numbers),
-            items = excludedNumbers,
-            emptyText = stringResource(R.string.privacy_empty),
-            addLabel = stringResource(R.string.privacy_field_number),
-            addActionLabel = stringResource(R.string.privacy_add),
-            removeLabel = stringResource(R.string.privacy_remove),
-            enabled = enabled,
-            onAdd = onAddNumber,
-            onRemove = onRemoveNumber,
-        )
-    }
-}
-
-@Composable
-private fun ServiceSection(
-    running: Boolean,
-    canStart: Boolean,
-    batteryExempt: Boolean,
-    onStart: () -> Unit,
-    onStop: () -> Unit,
-) {
-    val context = LocalContext.current
-    SectionCard(title = stringResource(R.string.section_service)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(color = if (running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = stringResource(
-                    when {
-                        running -> R.string.service_status_active
-                        canStart -> R.string.service_status_stopped
-                        else -> R.string.service_status_blocked
-                    },
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onStart, enabled = canStart && !running) {
-                Text(stringResource(R.string.action_start))
-            }
-            OutlinedButton(onClick = onStop, enabled = running) {
-                Text(stringResource(R.string.action_stop))
-            }
-        }
-
-        if (!batteryExempt) {
-            OutlinedButton(onClick = {
-                runCatching {
-                    context.startActivity(
-                        Intent(
-                            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                            Uri.parse("package:${context.packageName}"),
-                        ),
-                    )
-                }
-            }) { Text(stringResource(R.string.battery_request)) }
-        } else {
-            Text(
-                stringResource(R.string.battery_ok),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun LanguageSection(currentTag: String?, onSelect: (String?) -> Unit) {
-    SectionCard(title = stringResource(R.string.section_language)) {
-        val options = listOf(
-            null to stringResource(R.string.lang_system),
-            "tr" to stringResource(R.string.lang_tr),
-            "en" to stringResource(R.string.lang_en),
-        )
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            options.forEachIndexed { index, (tag, label) ->
-                SegmentedButton(
-                    selected = currentTag == tag,
-                    onClick = { onSelect(tag) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
-                ) { Text(label) }
-            }
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Building blocks
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun SectionCard(title: String, content: @Composable () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            content()
-        }
-    }
-}
-
-@Composable
-private fun ToggleRow(label: String, hint: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-            if (hint != null) {
-                Text(
-                    hint,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Switch(checked = checked, onCheckedChange = onChange)
-    }
-}
-
-/**
- * Shared list editor for regex patterns and excluded numbers: a simple
- * add-via-dialog, remove-per-row list. Deliberately plain — the value is in
- * the semantics, not the chrome.
- */
-@Composable
-private fun ListEditor(
-    title: String,
-    items: List<String>,
-    emptyText: String,
-    addLabel: String,
-    addActionLabel: String,
-    removeLabel: String,
-    enabled: Boolean,
-    onAdd: (String) -> Unit,
-    onRemove: (String) -> Unit,
-) {
-    var dialogOpen by rememberSaveable { mutableStateOf(false) }
-    var draft by rememberSaveable { mutableStateOf("") }
-
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.titleSmall)
-        if (items.isEmpty()) {
-            Text(
-                emptyText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            items.forEach { item ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(item, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { onRemove(item) }, enabled = enabled) {
-                        Icon(painter = androidx.compose.ui.res.painterResource(R.drawable.ic_delete), contentDescription = removeLabel)
-                    }
-                }
-            }
-        }
-        TextButton(onClick = { dialogOpen = true }, enabled = enabled) { Text(addActionLabel) }
-    }
-
-    if (dialogOpen) {
-        AlertDialog(
-            onDismissRequest = { dialogOpen = false },
-            title = { Text(title) },
-            text = {
-                OutlinedTextField(
-                    value = draft,
-                    onValueChange = { draft = it },
-                    label = { Text(addLabel) },
-                    singleLine = true,
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onAdd(draft)
-                        draft = ""
-                        dialogOpen = false
-                    },
-                    enabled = draft.isNotBlank(),
-                ) { Text(stringResource(R.string.privacy_add)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { dialogOpen = false }) {
-                    Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
-                }
-            },
-        )
-    }
-}
-
-@Composable
-private fun StatusText(text: String, color: Color) {
-    Text(text, style = MaterialTheme.typography.bodyMedium, color = color)
-}
-
-@Composable
-private fun StatusDot(color: Color) {
-    androidx.compose.foundation.Canvas(modifier = Modifier.size(10.dp)) {
-        drawCircle(color = color)
     }
 }

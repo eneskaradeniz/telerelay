@@ -14,6 +14,8 @@
     <string name="perm_group_phone_rationale">Needed to detect when a call is ringing and to add SIM info to messages.</string>
     <string name="perm_group_calllog_title">Call log</string>
     <string name="perm_group_calllog_rationale">On Android 12+ the system hides the caller number from call events; this permission lets TeleRelay look up the number of the current call so it can be shown. No call history is stored or forwarded.</string>
+    <string name="perm_group_contacts_title">Contacts</string>
+    <string name="perm_group_contacts_rationale">Lets TeleRelay show the contact name instead of a raw phone number in forwarded messages. Names are looked up on the device only — nothing is stored or forwarded beyond the message itself.</string>
     <string name="perm_group_notifications_title">Notifications</string>
     <string name="perm_group_notifications_rationale">Needed to show the persistent notification that keeps call monitoring alive.</string>
     <string name="perm_action_grant">Grant</string>
@@ -24,6 +26,8 @@
     <string name="section_credentials">Telegram credentials</string>
     <string name="field_bot_token">Bot token (from @BotFather)</string>
     <string name="field_chat_id">Chat ID</string>
+    <string name="field_token_saved">Token saved — ends in %1$s</string>
+    <string name="action_toggle_token_visibility">Show or hide the token</string>
     <string name="action_test">Send test message</string>
     <string name="test_sending">Sending…</string>
     <string name="test_ok">Test message delivered.</string>
@@ -39,35 +43,21 @@
     <string name="toggle_calls">Incoming call notifications</string>
     <string name="toggle_calls_hint">Needs the foreground service (started automatically).</string>
     <string name="toggle_missed">Missed call notifications</string>
-
-    <!-- Privacy guard -->
-    <string name="section_privacy">Privacy guard</string>
-    <string name="toggle_privacy">Filter OTP codes and bank messages</string>
-    <string name="privacy_mode_mask">Mask</string>
-    <string name="privacy_mode_exclude">Exclude</string>
-    <string name="privacy_patterns">Filter patterns (regex)</string>
-    <string name="privacy_numbers">Never forward from these numbers</string>
-    <string name="privacy_add">Add</string>
-    <string name="privacy_remove">Remove</string>
-    <string name="privacy_empty">No entries.</string>
-    <string name="privacy_field_pattern">Regex pattern</string>
-    <string name="privacy_field_number">Phone number</string>
+    <string name="toggle_missed_hint">Requires call monitoring (the service starts automatically).</string>
 
     <!-- Service -->
     <string name="section_service">Service</string>
     <string name="service_status_active">Call monitoring is running</string>
     <string name="service_status_stopped">Call monitoring is stopped</string>
-    <string name="service_status_blocked">Cannot start: grant phone permissions and set up Telegram first.</string>
+    <string name="service_status_blocked">Blocked</string>
+    <string name="status_reason_perms">Permissions missing</string>
+    <string name="status_reason_config">Telegram not configured</string>
     <string name="action_start">Start</string>
     <string name="action_stop">Stop</string>
-    <string name="battery_ok">Battery optimisation is exempted</string>
-    <string name="battery_request">Exempt from battery optimisation</string>
-
-    <!-- Language -->
-    <string name="section_language">Language</string>
-    <string name="lang_system">System</string>
-    <string name="lang_tr">Türkçe</string>
-    <string name="lang_en">English</string>
+    <string name="battery_row_title">Battery optimisation</string>
+    <string name="battery_ok">Exemption applied</string>
+    <string name="action_exempt">Exempt</string>
+    <string name="battery_request_failed">Could not open system settings.</string>
 
     <string name="footer_privacy_note">Messages are sent only to your own Telegram bot. TeleRelay stores nothing except its settings and has no analytics.</string>
 </resources>
