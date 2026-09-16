@@ -9,6 +9,7 @@ local.properties
 # Signing
 *.keystore
 *.jks
+keystore.properties
 
 # Environment / secrets
 .env

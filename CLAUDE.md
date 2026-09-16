@@ -116,13 +116,19 @@ AGP yükseltmeden önce Studio'nun AGP uyum tablosunu kontrol et; gerekirse
 ## Durum (2026-09-16 itibarıyla)
 
 - ✅ Public repo yayında: `github.com/eneskaradeniz/telerelay`, CI yeşil.
-- ✅ Revizyon turu 1 uygulandı (issue #1): UI redesign "Calm Groups", compact
-  mesaj formatı + kişi adı + koşullu SIM + OTP copy_text, gizlilik guard ve
-  numara filtresi kaldırıldı, pil butonu manifest izniyle düzeltildi, dil
-  değişimi kaldırıldı (cihaz dili izlenir). 67 test yeşil; reviewer + tester
-  ajan denetimi yapıldı, bulgular (cross-call numara sızıntısı, machine
-  thread-safety, CONTACTS'un servisi bloklaması, missed-call numara kaybı)
-  kapatıldı.
+- ✅ Revizyon turu 1 merge edildi (PR #2 → `2c5045a`): UI redesign "Calm
+  Groups", compact mesaj formatı + kişi adı + koşullu SIM + OTP copy_text,
+  gizlilik guard + numara filtresi + uygulama içi dil kaldırıldı. Reviewer +
+  tester ajan denetimindeki 11 bulgu (cross-call numara sızıntısı BLOCKER'ı
+  dahil) kapatıldı. 67 test yeşil.
+- ✅ Release altyapısı (2026-09-16): `telerelay-release.keystore` +
+  `keystore.properties` gitignored, local'de durur; build.gradle ikisi varsa
+  release'ı imzalar, yoksa unsigned bırakır (CI için). v1.1.0 (versionCode 2)
+  etiketi + GitHub Release yayınlandı.
+- ⏳ **Kullanıcının kaydetmesi gereken sırrı:** `telerelay-release.keystore`
+  ve `keystore.properties` (içinde store password) — bunlar kaybolursa
+  uygulama güncellemesi yüklenemez, yeni imza "farklı uygulama" sayılır.
+  Yedeklemesini kullanıcıya hatırlat.
 - ⏳ Bekleyen işler:
   1. Revizyon commit + push (kullanıcı onayı gerekli)
   2. Gerçek cihazda tam tur: SMS iletme (compact format + kişi adı + SIM),
