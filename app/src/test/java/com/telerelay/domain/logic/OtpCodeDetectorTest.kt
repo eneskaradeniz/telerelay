@@ -71,4 +71,10 @@ class OtpCodeDetectorTest {
         assertEquals("482913", OtpCodeDetector.find("Your verification code is 482913"))
         assertEquals("998877", OtpCodeDetector.find("OTP: 998877"))
     }
+
+    @Test
+    fun `inflected sifreniz keyword is recognised`() {
+        // Real-world body (makromusic): the keyword inflects ("sifre" -> "sifreniz").
+        assertEquals("240874", OtpCodeDetector.find("makromusic tek kullanimlik sifreniz 240874\nB186"))
+    }
 }
