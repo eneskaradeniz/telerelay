@@ -77,4 +77,22 @@ class OtpCodeDetectorTest {
         // Real-world body (makromusic): the keyword inflects ("sifre" -> "sifreniz").
         assertEquals("240874", OtpCodeDetector.find("makromusic tek kullanimlik sifreniz 240874\nB186"))
     }
+
+    @Test
+    fun `real-world verification bodies are all detected`() {
+        val bodies = mapOf(
+            "Tinder kodun: 625249 B043" to "625249",
+            "461751 dogrulama kodu ile Tikla Gelsin hesabiniza giris yapabilirsiniz. " +
+                "Bu SMS'i siz talep etmediyseniz lütfen göz ardi ediniz. pUpAYaJAqj7 B002" to "461751",
+            "IDEFIX PAZARYERI isyerinden 08.08.2026 00:42 tarihli 18394,40TL harcamaniz " +
+                "icin sifre:606414 Referans:MNWJONRO.Lutfen sifreyi kimseyle paylasmayin B001" to "606414",
+            "02 no lu 3D secure sifreniz 339767 IYZICO ISTANBULKART ISTAN isleminizin " +
+                "105,00 TL tutarli sifresini paylasmayiniz. B002" to "339767",
+            "Dogrulama kodunuz: 9255049. Bu kodu kimseyle paylasmayin; calisanlarimiz " +
+                "asla bu kodu sormazlar.\nTWVerify ile gonderildi. B043" to "9255049",
+        )
+        bodies.forEach { (body, expected) ->
+            assertEquals(expected, OtpCodeDetector.find(body))
+        }
+    }
 }
