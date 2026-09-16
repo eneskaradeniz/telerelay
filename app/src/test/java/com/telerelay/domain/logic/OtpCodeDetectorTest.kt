@@ -41,4 +41,34 @@ class OtpCodeDetectorTest {
         assertNull(OtpCodeDetector.find("Faturaniz hazir"))
         assertNull(OtpCodeDetector.find(""))
     }
+
+    @Test
+    fun `marketing sms without otp wording gets no button`() {
+        val body = "Giyim alisverislerinizi QNB Kredi Karti'yla yapin 4000 TL'ye varan " +
+            "ParaPuan kazanin! 30 Eylul'e kadar okula donus kampanyasi kapsaminda giyim, " +
+            "egitim ve kirtasiye sektorlerinde her 4000 TL ve uzeri harcamaniza 200 TL, " +
+            "mobil odemeye ek 200 TL, toplamda 4000 TL ParaPuan kazanin! Katilim icin OKUL " +
+            "yazip cevaplayin. ParaPuan son kullanim: 31 Ekim 2026 https://qnb.mn/43167qc " +
+            "SMSRET->3639 MERSIS:0388002333400576 B001"
+
+        assertNull(OtpCodeDetector.find(body))
+    }
+
+    @Test
+    fun `bare amounts without otp wording get no button`() {
+        assertNull(OtpCodeDetector.find("4000 TL'ye varan ParaPuan kazanin"))
+        assertNull(OtpCodeDetector.find("Bakiyeniz 123456 TL"))
+    }
+
+    @Test
+    fun `turkish verification wording is recognised`() {
+        assertEquals("482913", OtpCodeDetector.find("Güvenlik doğrulama kodu: 482913"))
+        assertEquals("555122", OtpCodeDetector.find("Islem onay sifreniz 555122"))
+    }
+
+    @Test
+    fun `english verification wording is recognised`() {
+        assertEquals("482913", OtpCodeDetector.find("Your verification code is 482913"))
+        assertEquals("998877", OtpCodeDetector.find("OTP: 998877"))
+    }
 }

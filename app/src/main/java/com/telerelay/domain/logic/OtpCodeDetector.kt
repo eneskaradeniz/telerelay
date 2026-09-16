@@ -6,15 +6,19 @@ package com.telerelay.domain.logic
  * filter — nothing is masked, dropped or rewritten, and there is no rule set to
  * configure.
  *
- * Best-effort by design: leftmost 4–8 digit run wins, with slashes excluded
- * from the boundaries so date fragments (`16/09/2026`) and times (`16:06:39`)
- * are not picked up.
+ * A bare digit run is not enough: marketing SMS are full of 4–8 digit numbers
+ * ("4000 TL'ye varan ParaPuan"), so the number must be preceded by an
+ * OTP-context keyword (kod / code / doğrulama / otp / pin / şifre) within a
+ * few characters. Best-effort by design; slashes are excluded from the number
+ * boundaries so dates (`16/09/2026`) are never picked up.
  */
 object OtpCodeDetector {
 
-    /** 4–8 digits, not adjacent to another digit or a slash. */
-    private val CODE = Regex("(?<![\\d/])\\d{4,8}(?![\\d/])")
+    private val CODE = Regex(
+        "(?iu)(?<![a-zçğıöşü])(?:dogrulama|doğrulama|kod|code|passcode|otp|şifre|sifre|pin)" +
+            "[a-zçğıöşü]*[^0-9]{0,12}(?<![\\d/])(\\d{4,8})(?![\\d/])",
+    )
 
-    /** First code-like token in [body], or null when nothing looks like a code. */
-    fun find(body: String): String? = CODE.find(body)?.value
+    /** First code-like token near OTP wording in [body], or null when there is none. */
+    fun find(body: String): String? = CODE.find(body)?.groupValues?.get(1)
 }

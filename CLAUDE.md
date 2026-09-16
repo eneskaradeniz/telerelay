@@ -80,6 +80,14 @@ AGP yükseltmeden önce Studio'nun AGP uyum tablosunu kontrol et; gerekirse
   bildirilmesine rağmen bir kez recreate edebiliyor (API 33+); sonraki
   değişimler recreate'siz. API 34+ `overrideActivityTransition(OPEN/CLOSE, 0, 0)`
   ile maskele (pozisyonel çağrı) — flaş görünmez.
+- **2026-09-16** (gerçek cihaz) Sideload uygulamalarda SMS/CallLog izinleri
+  Android 13+ tarafından kilitlenir; açma yolu: Ayarlar → Uygulamalar →
+  uygulama → ⋮ → "Kısıtlanmış izinlere izin ver". README Kurulum adımında
+  bulundur — kullanıcı support istemeden önce görsün.
+- **2026-09-16** (gerçek cihaz) OTP dedektörü çıplak sayı regex'i
+  pazarlama SMS'inde yanlış buton üretti ("4000 TL'ye varan ParaPuan" →
+  "4000" kopyalanıyordu). Anahtar kelime kapısı şart: sayıdan önce
+  kod/doğrulama/code/otp/pin/şifre ifadesi aranır.
 
 ## Güvenlik kuralları
 
