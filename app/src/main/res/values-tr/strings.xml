@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TeleRelay</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_channel_monitor_name">Arama izleme</string>
+    <string name="notif_monitor_title">TeleRelay çalışıyor</string>
+    <string name="notif_monitor_text">Gelen aramalar Telegram sohbetinize iletiliyor</string>
+
+    <!-- Permissions -->
+    <string name="perm_group_sms_title">SMS</string>
+    <string name="perm_group_sms_rationale">Gelen SMS\'leri yakalayıp kendi Telegram sohbetinize iletebilmek için gereklidir.</string>
+    <string name="perm_group_phone_title">Telefon durumu</string>
+    <string name="perm_group_phone_rationale">Aramanın çaldığını anlamak ve mesajlara SIM bilgisini ekleyebilmek için gereklidir.</string>
+    <string name="perm_group_calllog_title">Arama kaydı</string>
+    <string name="perm_group_calllog_rationale">Android 12 ve üzerinde sistem arayan numarasını arama olayında gizler; bu izin TeleRelay\'in güncel aramanın numarasına bakmasını sağlar. Arama geçmişi saklanmaz veya iletilmez.</string>
+    <string name="perm_group_notifications_title">Bildirimler</string>
+    <string name="perm_group_notifications_rationale">Arama izlemeyi canlı tutan kalıcı bildirimi gösterebilmek için gereklidir.</string>
+    <string name="perm_action_grant">İzin ver</string>
+    <string name="perm_all_granted">Gerekli tüm izinler verilmiş.</string>
+    <string name="perm_section_title">İzinler</string>
+
+    <!-- Credentials -->
+    <string name="section_credentials">Telegram bilgileri</string>
+    <string name="field_bot_token">Bot token (@BotFather)\'dan</string>
+    <string name="field_chat_id">Chat ID</string>
+    <string name="action_test">Test mesajı gönder</string>
+    <string name="test_sending">Gönderiliyor…</string>
+    <string name="test_ok">Test mesajı iletildi.</string>
+    <string name="test_failed_token">İletilemedi: bot token geçersiz.</string>
+    <string name="test_failed_chat">İletilemedi: sohbet bulunamadı — chat ID\'yi ve bota /start gönderdiğinizi kontrol edin.</string>
+    <string name="test_not_configured">Önce bot token ve chat ID girin.</string>
+    <string name="test_failed_network">İletilemedi: ağ hatası. Daha sonra tekrar deneyin.</string>
+
+    <!-- Forwarding toggles -->
+    <string name="section_forwarding">İletme</string>
+    <string name="toggle_sms">SMS\'leri ilet</string>
+    <string name="toggle_sms_hint">Açıldığı anda çalışır; ön plan servisine ihtiyaç duymaz.</string>
+    <string name="toggle_calls">Gelen arama bildirimleri</string>
+    <string name="toggle_calls_hint">Ön plan servisi gerektirir (otomatik başlatılır).</string>
+    <string name="toggle_missed">Cevapsız arama bildirimleri</string>
+
+    <!-- Privacy guard -->
+    <string name="section_privacy">Gizlilik filtresi</string>
+    <string name="toggle_privacy">OTP kodlarını ve banka mesajlarını filtrele</string>
+    <string name="privacy_mode_mask">Maskele</string>
+    <string name="privacy_mode_exclude">Hariç tut</string>
+    <string name="privacy_patterns">Filtre desenleri (regex)</string>
+    <string name="privacy_numbers">Bu numaralardan gelenler iletilmesin</string>
+    <string name="privacy_add">Ekle</string>
+    <string name="privacy_remove">Kaldır</string>
+    <string name="privacy_empty">Kayıt yok.</string>
+    <string name="privacy_field_pattern">Regex deseni</string>
+    <string name="privacy_field_number">Telefon numarası</string>
+
+    <!-- Service -->
+    <string name="section_service">Servis</string>
+    <string name="service_status_active">Arama izleme çalışıyor</string>
+    <string name="service_status_stopped">Arama izleme durduruldu</string>
+    <string name="service_status_blocked">Başlatılamıyor: telefon izinlerini verin ve Telegram ayarlarını tamamlayın.</string>
+    <string name="action_start">Başlat</string>
+    <string name="action_stop">Durdur</string>
+    <string name="battery_ok">Pil optimizasyonu istisnası var</string>
+    <string name="battery_request">Pil optimizasyonundan muaf tut</string>
+
+    <!-- Language -->
+    <string name="section_language">Dil</string>
+    <string name="lang_system">Sistem</string>
+    <string name="lang_tr">Türkçe</string>
+    <string name="lang_en">English</string>
+
+    <string name="footer_privacy_note">Mesajlar yalnızca kendi Telegram botunuza gönderilir. TeleRelay ayarlarından başka hiçbir şey saklamaz ve analitik içermez.</string>
+</resources>

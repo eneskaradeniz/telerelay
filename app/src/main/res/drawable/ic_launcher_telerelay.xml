@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simple launcher glyph: paper plane on a rounded tile. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Rounded tile background -->
+    <path
+        android:pathData="M18,4 h72 a14,14 0 0 1 14,14 v72 a14,14 0 0 1 -14,14 h-72 a14,14 0 0 1 -14,-14 v-72 a14,14 0 0 1 14,-14 z"
+        android:fillColor="#1A73E8" />
+
+    <!-- Paper plane -->
+    <path
+        android:pathData="M84,28 L24,52 L44,60 L48,80 L58,66 L72,72 Z"
+        android:fillColor="#FFFFFF" />
+    <path
+        android:pathData="M44,60 L84,28 L48,80 Z"
+        android:fillColor="#E3F0FD" />
+</vector>

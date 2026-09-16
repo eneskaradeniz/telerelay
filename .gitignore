@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# Local configuration
+local.properties
+
+# Signing
+*.keystore
+*.jks
+
+# Environment / secrets
+.env
+.env.*
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Logs
+*.log
+
+# Local session notes
+.remember/

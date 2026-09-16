@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppCompatActivity requires an AppCompat theme; Compose supplies the rest. -->
+    <style name="Theme.TeleRelay" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>

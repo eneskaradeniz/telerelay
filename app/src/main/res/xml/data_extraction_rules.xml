@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Belt-and-suspenders on top of android:allowBackup="false": even if backup
+  behaviour changes, the settings file (which holds encrypted secrets) must
+  never leave the device — the Keystore key cannot travel with it anyway.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="telerelay_settings.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="telerelay_settings.xml" />
+    </device-transfer>
+</data-extraction-rules>
