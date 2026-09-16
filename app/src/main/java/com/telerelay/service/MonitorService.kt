@@ -53,7 +53,9 @@ class MonitorService : Service() {
 
     override fun onDestroy() {
         callMonitor.stop()
-        forwardCall.onMonitoringRestarted()
+        // The machine reset is serialized on the pipeline's dispatcher; the
+        // application scope outlives the service instance.
+        scope.launch { forwardCall.onMonitoringRestarted() }
         monitorStatus.markStopped()
         super.onDestroy()
     }

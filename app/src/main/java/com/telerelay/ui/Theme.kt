@@ -11,21 +11,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val Brand = Color(0xFF1A73E8)
-private val BrandDark = Color(0xFF8AB4F8)
+// Telegram-adjacent deep teal, used below API 31 where the system dynamic
+// palette is unavailable. All other colors come from the M3 baseline scheme.
+private val TealPrimary = Color(0xFF00687A)
+private val TealPrimaryDark = Color(0xFF5DD5F3)
 
 private val LightColors = lightColorScheme(
-    primary = Brand,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFD8E2FF),
-    onPrimaryContainer = Color(0xFF001B3F),
+    primary = TealPrimary,
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFB4EBFF),
+    onPrimaryContainer = Color(0xFF001F28),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = BrandDark,
-    onPrimary = Color(0xFF002F67),
-    primaryContainer = Color(0xFF00458C),
-    onPrimaryContainer = Color(0xFFD8E2FF),
+    primary = TealPrimaryDark,
+    onPrimary = Color(0xFF003542),
+    primaryContainer = Color(0xFF004D5E),
+    onPrimaryContainer = Color(0xFFB4EBFF),
 )
 
 /** Material 3 theme; uses the system dynamic palette on Android 12+. */

@@ -14,6 +14,8 @@
     <string name="perm_group_phone_rationale">Aramanın çaldığını anlamak ve mesajlara SIM bilgisini ekleyebilmek için gereklidir.</string>
     <string name="perm_group_calllog_title">Arama kaydı</string>
     <string name="perm_group_calllog_rationale">Android 12 ve üzerinde sistem arayan numarasını arama olayında gizler; bu izin TeleRelay\'in güncel aramanın numarasına bakmasını sağlar. Arama geçmişi saklanmaz veya iletilmez.</string>
+    <string name="perm_group_contacts_title">Kişiler</string>
+    <string name="perm_group_contacts_rationale">İletilen mesajlarda ham numara yerine kişi adının görünmesini sağlar. Adlar yalnızca cihazda aranır — mesajın kendisinin ötesinde hiçbir şey saklanmaz veya iletilmez.</string>
     <string name="perm_group_notifications_title">Bildirimler</string>
     <string name="perm_group_notifications_rationale">Arama izlemeyi canlı tutan kalıcı bildirimi gösterebilmek için gereklidir.</string>
     <string name="perm_action_grant">İzin ver</string>
@@ -24,6 +26,8 @@
     <string name="section_credentials">Telegram bilgileri</string>
     <string name="field_bot_token">Bot token (@BotFather)\'dan</string>
     <string name="field_chat_id">Chat ID</string>
+    <string name="field_token_saved">Token kaydedildi — %1$s ile bitiyor</string>
+    <string name="action_toggle_token_visibility">Token\'ı göster veya gizle</string>
     <string name="action_test">Test mesajı gönder</string>
     <string name="test_sending">Gönderiliyor…</string>
     <string name="test_ok">Test mesajı iletildi.</string>
@@ -39,35 +43,21 @@
     <string name="toggle_calls">Gelen arama bildirimleri</string>
     <string name="toggle_calls_hint">Ön plan servisi gerektirir (otomatik başlatılır).</string>
     <string name="toggle_missed">Cevapsız arama bildirimleri</string>
-
-    <!-- Privacy guard -->
-    <string name="section_privacy">Gizlilik filtresi</string>
-    <string name="toggle_privacy">OTP kodlarını ve banka mesajlarını filtrele</string>
-    <string name="privacy_mode_mask">Maskele</string>
-    <string name="privacy_mode_exclude">Hariç tut</string>
-    <string name="privacy_patterns">Filtre desenleri (regex)</string>
-    <string name="privacy_numbers">Bu numaralardan gelenler iletilmesin</string>
-    <string name="privacy_add">Ekle</string>
-    <string name="privacy_remove">Kaldır</string>
-    <string name="privacy_empty">Kayıt yok.</string>
-    <string name="privacy_field_pattern">Regex deseni</string>
-    <string name="privacy_field_number">Telefon numarası</string>
+    <string name="toggle_missed_hint">Arama izleme gerektirir (servis otomatik başlatılır).</string>
 
     <!-- Service -->
     <string name="section_service">Servis</string>
     <string name="service_status_active">Arama izleme çalışıyor</string>
     <string name="service_status_stopped">Arama izleme durduruldu</string>
-    <string name="service_status_blocked">Başlatılamıyor: telefon izinlerini verin ve Telegram ayarlarını tamamlayın.</string>
+    <string name="service_status_blocked">Engellendi</string>
+    <string name="status_reason_perms">İzinler eksik</string>
+    <string name="status_reason_config">Telegram yapılandırılmadı</string>
     <string name="action_start">Başlat</string>
     <string name="action_stop">Durdur</string>
-    <string name="battery_ok">Pil optimizasyonu istisnası var</string>
-    <string name="battery_request">Pil optimizasyonundan muaf tut</string>
-
-    <!-- Language -->
-    <string name="section_language">Dil</string>
-    <string name="lang_system">Sistem</string>
-    <string name="lang_tr">Türkçe</string>
-    <string name="lang_en">English</string>
+    <string name="battery_row_title">Pil optimizasyonu</string>
+    <string name="battery_ok">İstisna uygulandı</string>
+    <string name="action_exempt">Muaf tut</string>
+    <string name="battery_request_failed">Sistem ayarları açılamadı.</string>
 
     <string name="footer_privacy_note">Mesajlar yalnızca kendi Telegram botunuza gönderilir. TeleRelay ayarlarından başka hiçbir şey saklamaz ve analitik içermez.</string>
 </resources>

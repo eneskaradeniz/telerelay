@@ -2,13 +2,11 @@ package com.telerelay.ui
 
 import android.content.Context
 import android.os.PowerManager
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.telerelay.domain.model.AppSettings
 import com.telerelay.domain.model.FailureReason
-import com.telerelay.domain.model.PrivacyMode
+import com.telerelay.domain.model.OutgoingMessage
 import com.telerelay.domain.model.SendOutcome
 import com.telerelay.domain.port.MessageFormatter
 import com.telerelay.domain.port.SettingsRepository
@@ -28,8 +26,8 @@ import javax.inject.Inject
 
 /**
  * State holder for the settings screen. Persists everything immediately —
- * there is no save button — and exposes one-shot actions for test sends,
- * service control and language switching.
+ * there is no save button — and exposes one-shot actions for test sends and
+ * service control.
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -43,34 +41,53 @@ class SettingsViewModel @Inject constructor(
 
     private val testResult = MutableStateFlow<TestResult?>(null)
     private val permissions = MutableStateFlow(PermissionGroup.missing(appContext))
-    private val languageTag = MutableStateFlow(currentLanguageTag())
+    private val requiredPermissions = MutableStateFlow(PermissionGroup.missingRequired(appContext))
+    private val batteryExempt = MutableStateFlow(isBatteryExempt())
 
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsRepository.settings,
         permissions.asStateFlow(),
+        requiredPermissions.asStateFlow(),
         monitorStatus.running,
         testResult.asStateFlow(),
-        languageTag.asStateFlow(),
-    ) { settings, missing, running, test, lang ->
+    ) { settings, missing, missingRequired, running, test ->
         SettingsUiState(
             settings = settings,
             missingPermissions = missing,
+            missingRequiredPermissions = missingRequired,
             callMonitoringRunning = running,
-            batteryExempt = isBatteryExempt(),
             testResult = test,
-            languageTag = lang,
+            botTokenPreview = tokenPreview(settings.botToken),
+            batteryExempt = batteryExempt.value,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialUiState())
+    }
+        // Battery state lives in its own flow: re-evaluating it only inside the
+        // combine above left the UI stale after the system dialog, because an
+        // unchanged permissions flow emits nothing on ON_RESUME.
+        .combine(batteryExempt.asStateFlow()) { state, exempt ->
+            state.copy(batteryExempt = exempt)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialUiState())
 
-    /** Re-evaluates permission grants (e.g. after returning from the system dialog). */
+    /** Re-evaluates permission grants / battery state after system dialogs. */
     fun refreshPermissions() {
         permissions.value = PermissionGroup.missing(appContext)
+        requiredPermissions.value = PermissionGroup.missingRequired(appContext)
+        batteryExempt.value = isBatteryExempt()
     }
 
     // --- credentials -------------------------------------------------------
 
-    fun setBotToken(value: String) = settingsRepository.setBotToken(value.trim())
-    fun setChatId(value: String) = settingsRepository.setChatId(value.trim())
+    /** Editing a credential invalidates a previous test outcome. */
+    fun setBotToken(value: String) {
+        settingsRepository.setBotToken(value.trim())
+        clearTestResult()
+    }
+
+    fun setChatId(value: String) {
+        settingsRepository.setChatId(value.trim())
+        clearTestResult()
+    }
 
     fun sendTestMessage() {
         val s = settingsRepository.current()
@@ -80,7 +97,7 @@ class SettingsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             testResult.value = TestResult.Sending
-            testResult.value = when (val outcome = gateway.send(formatter.testMessage())) {
+            testResult.value = when (val outcome = gateway.send(OutgoingMessage(formatter.testMessage()))) {
                 is SendOutcome.Sent -> TestResult.Success
                 is SendOutcome.Failed -> TestResult.Failure(reason = outcome.reason)
                 is SendOutcome.RetryLater -> TestResult.Failure(reason = null)
@@ -101,50 +118,17 @@ class SettingsViewModel @Inject constructor(
     fun setMissedCallNotificationEnabled(enabled: Boolean) =
         settingsRepository.setMissedCallNotificationEnabled(enabled)
 
-    // --- privacy guard -----------------------------------------------------
-
-    fun setPrivacyGuardEnabled(enabled: Boolean) = settingsRepository.setPrivacyGuardEnabled(enabled)
-    fun setPrivacyMode(mode: PrivacyMode) = settingsRepository.setPrivacyMode(mode)
-    fun addFilterPattern(pattern: String) {
-        val trimmed = pattern.trim()
-        if (trimmed.isEmpty()) return
-        settingsRepository.setFilterPatterns(settingsRepository.current().filterPatterns + trimmed)
-    }
-
-    fun removeFilterPattern(pattern: String) =
-        settingsRepository.setFilterPatterns(settingsRepository.current().filterPatterns - pattern)
-
-    fun addExcludedNumber(number: String) {
-        val normalized = number.trim().replace(" ", "")
-        if (normalized.isEmpty()) return
-        settingsRepository.setExcludedNumbers(settingsRepository.current().excludedNumbers + normalized)
-    }
-
-    fun removeExcludedNumber(number: String) =
-        settingsRepository.setExcludedNumbers(settingsRepository.current().excludedNumbers - number)
-
     // --- service -----------------------------------------------------------
 
     fun startCallMonitoring() = serviceController.startCallMonitoring()
     fun stopCallMonitoring() = serviceController.stopCallMonitoring()
 
-    // --- language ----------------------------------------------------------
-
-    /** @param tag "tr", "en", or null to follow the system language. */
-    fun setLanguage(tag: String?) {
-        AppCompatDelegate.setApplicationLocales(
-            if (tag == null) LocaleListCompat.getEmptyLocaleList()
-            else LocaleListCompat.forLanguageTags(tag),
-        )
-        languageTag.value = tag
-    }
-
     private fun initialUiState() = SettingsUiState(
         settings = settingsRepository.current(),
         missingPermissions = PermissionGroup.missing(appContext),
+        missingRequiredPermissions = PermissionGroup.missingRequired(appContext),
         callMonitoringRunning = monitorStatus.running.value,
         batteryExempt = isBatteryExempt(),
-        languageTag = currentLanguageTag(),
     )
 
     private fun isBatteryExempt(): Boolean {
@@ -152,6 +136,13 @@ class SettingsViewModel @Inject constructor(
         return powerManager.isIgnoringBatteryOptimizations(appContext.packageName)
     }
 
-    private fun currentLanguageTag(): String? =
-        AppCompatDelegate.getApplicationLocales().takeIf { !it.isEmpty }?.toLanguageTags()
+    /** Masked token hint for the supporting text; never more than the last 4 chars. */
+    private fun tokenPreview(token: String?): String? {
+        val value = token?.takeIf { it.isNotBlank() } ?: return null
+        return "••••" + value.takeLast(4)
+    }
+
+    private fun clearTestResult() {
+        testResult.value = null
+    }
 }

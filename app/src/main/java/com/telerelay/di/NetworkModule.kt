@@ -33,6 +33,9 @@ object NetworkModule {
     fun json(): Json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
+        // Optional request fields (e.g. reply_markup) stay off the wire entirely
+        // when unset instead of being sent as explicit nulls.
+        explicitNulls = false
     }
 
     @Provides

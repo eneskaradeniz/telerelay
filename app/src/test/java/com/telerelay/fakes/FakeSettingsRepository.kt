@@ -1,7 +1,6 @@
-package com.telerelay.data.privacy
+package com.telerelay.fakes
 
 import com.telerelay.domain.model.AppSettings
-import com.telerelay.domain.model.PrivacyMode
 import com.telerelay.domain.port.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,14 +29,6 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings()) : SettingsRep
 
     override fun setMissedCallNotificationEnabled(enabled: Boolean) =
         update { copy(missedCallNotificationEnabled = enabled) }
-
-    override fun setPrivacyGuardEnabled(enabled: Boolean) =
-        update { copy(privacyGuardEnabled = enabled) }
-
-    override fun setPrivacyMode(mode: PrivacyMode) = update { copy(privacyMode = mode) }
-    override fun setFilterPatterns(patterns: List<String>) = update { copy(filterPatterns = patterns) }
-    override fun setExcludedNumbers(numbers: List<String>) = update { copy(excludedNumbers = numbers) }
-    override fun setLanguageTag(tag: String?) = update { copy(languageTag = tag) }
 
     private fun update(transform: AppSettings.() -> AppSettings) {
         flow.value = flow.value.transform()

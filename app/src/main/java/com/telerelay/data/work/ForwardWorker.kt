@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.telerelay.data.crypto.SecretCipher
+import com.telerelay.domain.model.OutgoingMessage
 import com.telerelay.domain.model.SendOutcome
 import com.telerelay.domain.port.TelegramGateway
 import dagger.assisted.Assisted
@@ -29,7 +30,8 @@ class ForwardWorker @AssistedInject constructor(
         val text = inputData.getString(KEY_TEXT)
             ?.let(cipher::decrypt)
             ?: return Result.failure()
-        return when (gateway.send(text)) {
+        val copyText = inputData.getString(KEY_COPY_TEXT)?.let(cipher::decrypt)
+        return when (gateway.send(OutgoingMessage(text = text, copyText = copyText))) {
             is SendOutcome.Sent -> Result.success()
             is SendOutcome.RetryLater -> Result.retry()
             is SendOutcome.Failed -> Result.failure()
@@ -38,5 +40,6 @@ class ForwardWorker @AssistedInject constructor(
 
     companion object {
         const val KEY_TEXT = "text"
+        const val KEY_COPY_TEXT = "copy_text"
     }
 }

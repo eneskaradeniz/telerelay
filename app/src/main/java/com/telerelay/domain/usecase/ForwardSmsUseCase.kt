@@ -2,13 +2,14 @@ package com.telerelay.domain.usecase
 
 import com.telerelay.di.ApplicationScope
 import com.telerelay.domain.logic.MultipartSmsAssembler
+import com.telerelay.domain.logic.OtpCodeDetector
 import com.telerelay.domain.model.AppSettings
-import com.telerelay.domain.model.FilterDecision
 import com.telerelay.domain.model.IncomingSms
+import com.telerelay.domain.model.OutgoingMessage
 import com.telerelay.domain.port.Clock
+import com.telerelay.domain.port.ContactNameResolver
 import com.telerelay.domain.port.MessageFormatter
 import com.telerelay.domain.port.MessageSender
-import com.telerelay.domain.port.PrivacyFilter
 import com.telerelay.domain.port.SettingsRepository
 import com.telerelay.domain.port.SimInfoProvider
 import kotlinx.coroutines.CoroutineScope
@@ -17,13 +18,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * SMS pipeline: assemble multipart segments → privacy guard → format → deliver.
+ * SMS pipeline: assemble multipart segments → format → deliver.
  * Runs once per SMS broadcast; cheap early exits keep the common case fast.
  */
 class ForwardSmsUseCase @Inject constructor(
     private val assembler: MultipartSmsAssembler,
     private val settings: SettingsRepository,
-    private val filter: PrivacyFilter,
+    private val contacts: ContactNameResolver,
     private val formatter: MessageFormatter,
     private val sender: MessageSender,
     private val simInfo: SimInfoProvider,
@@ -58,25 +59,18 @@ class ForwardSmsUseCase @Inject constructor(
     }
 
     private suspend fun deliver(sms: IncomingSms, s: AppSettings) {
-        val decision = if (s.privacyGuardEnabled) {
-            filter.evaluate(sms.sender, sms.body)
-        } else {
-            FilterDecision.Allow
-        }
-
-        val body = when (decision) {
-            FilterDecision.Allow -> sms.body
-            FilterDecision.Exclude -> return
-            is FilterDecision.Masked -> decision.maskedBody
-        }
-
         val text = formatter.sms(
-            sender = sms.sender,
-            body = body,
-            receivedAtMillis = sms.receivedAtMillis,
-            sim = simInfo.activeSim(),
+            // Resolve fails for non-contacts (short codes like "2273", service
+            // alphanumerics like "E-DEVLET") — fall back to the raw sender.
+            // "Bilinmiyor" is reserved for calls, where the number can be
+            // genuinely unknown; an SMS always has a sender.
+            sender = contacts.resolve(sms.sender) ?: sms.sender,
+            body = sms.body,
+            sim = simInfo.simMarker(sms.subscriptionId),
         )
-        sender.sendOrEnqueue(text)
+        sender.sendOrEnqueue(
+            OutgoingMessage(text = text, copyText = OtpCodeDetector.find(sms.body)),
+        )
     }
 
     companion object {
