@@ -40,6 +40,8 @@
     <string name="section_forwarding">İletme</string>
     <string name="toggle_sms">SMS\'leri ilet</string>
     <string name="toggle_sms_hint">Açıldığı anda çalışır; ön plan servisine ihtiyaç duymaz.</string>
+    <string name="toggle_ad_filter">Reklam SMS\'lerini iletme</string>
+    <string name="toggle_ad_filter_hint">Ret talimatlı (SMS RET, MERSIS) kampanyalar ve bahis spam\'i iletilmez. Doğrulama kodları ve kayıtlı kişiler her zaman gelir.</string>
     <string name="toggle_calls">Gelen arama bildirimleri</string>
     <string name="toggle_calls_hint">Ön plan servisi gerektirir (otomatik başlatılır).</string>
     <string name="toggle_missed">Cevapsız arama bildirimleri</string>

@@ -11,6 +11,8 @@ data class AppSettings(
     val smsForwardingEnabled: Boolean = true,
     val callNotificationEnabled: Boolean = true,
     val missedCallNotificationEnabled: Boolean = true,
+    /** Drop advertising SMS (see [com.telerelay.domain.logic.AdSmsDetector]). */
+    val adFilterEnabled: Boolean = true,
 ) {
     /** True when both Telegram credentials are present and non-blank. */
     val isConfigured: Boolean

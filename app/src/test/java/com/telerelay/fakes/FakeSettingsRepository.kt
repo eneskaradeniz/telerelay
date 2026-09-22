@@ -30,6 +30,9 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings()) : SettingsRep
     override fun setMissedCallNotificationEnabled(enabled: Boolean) =
         update { copy(missedCallNotificationEnabled = enabled) }
 
+    override fun setAdFilterEnabled(enabled: Boolean) =
+        update { copy(adFilterEnabled = enabled) }
+
     private fun update(transform: AppSettings.() -> AppSettings) {
         flow.value = flow.value.transform()
     }

@@ -26,8 +26,8 @@ android {
         applicationId = "com.telerelay"
         minSdk = 26
         targetSdk = 37
-        versionCode = 4
-        versionName = "1.1.2"
+        versionCode = 5
+        versionName = "1.2.0"
 
         // Ship only the languages the app actually provides.
         resourceConfigurations += listOf("en", "tr")

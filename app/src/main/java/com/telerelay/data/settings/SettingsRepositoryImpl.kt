@@ -34,12 +34,16 @@ class SettingsRepositoryImpl @Inject constructor(
     override fun setMissedCallNotificationEnabled(enabled: Boolean) =
         update { copy(missedCallNotificationEnabled = enabled) }
 
+    override fun setAdFilterEnabled(enabled: Boolean) =
+        update { copy(adFilterEnabled = enabled) }
+
     private fun load(): AppSettings = AppSettings(
         botToken = dataSource.readBotToken(),
         chatId = dataSource.readChatId(),
         smsForwardingEnabled = dataSource.readBoolean(KEY_SMS_ENABLED, true),
         callNotificationEnabled = dataSource.readBoolean(KEY_CALL_ENABLED, true),
         missedCallNotificationEnabled = dataSource.readBoolean(KEY_MISSED_ENABLED, true),
+        adFilterEnabled = dataSource.readBoolean(KEY_AD_FILTER_ENABLED, true),
     )
 
     private fun update(transform: AppSettings.() -> AppSettings) {
@@ -54,6 +58,7 @@ class SettingsRepositoryImpl @Inject constructor(
         dataSource.writeBoolean(KEY_SMS_ENABLED, s.smsForwardingEnabled)
         dataSource.writeBoolean(KEY_CALL_ENABLED, s.callNotificationEnabled)
         dataSource.writeBoolean(KEY_MISSED_ENABLED, s.missedCallNotificationEnabled)
+        dataSource.writeBoolean(KEY_AD_FILTER_ENABLED, s.adFilterEnabled)
     }
 
     private fun String.blankToNull(): String? = takeIf { isNotBlank() }
@@ -62,5 +67,6 @@ class SettingsRepositoryImpl @Inject constructor(
         const val KEY_SMS_ENABLED = "sms_forwarding_enabled"
         const val KEY_CALL_ENABLED = "call_notification_enabled"
         const val KEY_MISSED_ENABLED = "missed_call_notification_enabled"
+        const val KEY_AD_FILTER_ENABLED = "ad_filter_enabled"
     }
 }

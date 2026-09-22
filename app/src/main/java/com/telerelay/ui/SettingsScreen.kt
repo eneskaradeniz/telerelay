@@ -123,9 +123,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     smsEnabled = state.settings.smsForwardingEnabled,
                     callsEnabled = state.settings.callNotificationEnabled,
                     missedEnabled = state.settings.missedCallNotificationEnabled,
+                    adFilterEnabled = state.settings.adFilterEnabled,
                     onSmsChange = viewModel::setSmsForwardingEnabled,
                     onCallsChange = viewModel::setCallNotificationEnabled,
                     onMissedChange = viewModel::setMissedCallNotificationEnabled,
+                    onAdFilterChange = viewModel::setAdFilterEnabled,
                 )
 
                 TelegramCard(
@@ -409,9 +411,11 @@ private fun ForwardingCard(
     smsEnabled: Boolean,
     callsEnabled: Boolean,
     missedEnabled: Boolean,
+    adFilterEnabled: Boolean,
     onSmsChange: (Boolean) -> Unit,
     onCallsChange: (Boolean) -> Unit,
     onMissedChange: (Boolean) -> Unit,
+    onAdFilterChange: (Boolean) -> Unit,
 ) {
     SectionCard(title = stringResource(R.string.section_forwarding)) {
         ToggleRow(
@@ -419,6 +423,12 @@ private fun ForwardingCard(
             hint = stringResource(R.string.toggle_sms_hint),
             checked = smsEnabled,
             onCheckedChange = onSmsChange,
+        )
+        ToggleRow(
+            label = stringResource(R.string.toggle_ad_filter),
+            hint = stringResource(R.string.toggle_ad_filter_hint),
+            checked = adFilterEnabled,
+            onCheckedChange = onAdFilterChange,
         )
         ToggleRow(
             label = stringResource(R.string.toggle_calls),

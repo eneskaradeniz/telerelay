@@ -1,6 +1,7 @@
 package com.telerelay.domain.usecase
 
 import com.telerelay.di.ApplicationScope
+import com.telerelay.domain.logic.AdSmsDetector
 import com.telerelay.domain.logic.MultipartSmsAssembler
 import com.telerelay.domain.logic.OtpCodeDetector
 import com.telerelay.domain.model.AppSettings
@@ -18,7 +19,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * SMS pipeline: assemble multipart segments → format → deliver.
+ * SMS pipeline: assemble multipart segments → ad filter → format → deliver.
  * Runs once per SMS broadcast; cheap early exits keep the common case fast.
  */
 class ForwardSmsUseCase @Inject constructor(
@@ -59,18 +60,24 @@ class ForwardSmsUseCase @Inject constructor(
     }
 
     private suspend fun deliver(sms: IncomingSms, s: AppSettings) {
+        val contactName = contacts.resolve(sms.sender)
+        val code = OtpCodeDetector.find(sms.body)
+        // Runs on the assembled body: opt-out wording sits at the end of long
+        // multipart ads. Codes and saved contacts always get through — a
+        // missed OTP costs far more than one stray ad.
+        if (s.adFilterEnabled && code == null && contactName == null && AdSmsDetector.isAd(sms.body)) {
+            return
+        }
         val text = formatter.sms(
             // Resolve fails for non-contacts (short codes like "2273", service
             // alphanumerics like "E-DEVLET") — fall back to the raw sender.
             // "Bilinmiyor" is reserved for calls, where the number can be
             // genuinely unknown; an SMS always has a sender.
-            sender = contacts.resolve(sms.sender) ?: sms.sender,
+            sender = contactName ?: sms.sender,
             body = sms.body,
             sim = simInfo.simMarker(sms.subscriptionId),
         )
-        sender.sendOrEnqueue(
-            OutgoingMessage(text = text, copyText = OtpCodeDetector.find(sms.body)),
-        )
+        sender.sendOrEnqueue(OutgoingMessage(text = text, copyText = code))
     }
 
     companion object {

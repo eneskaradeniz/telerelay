@@ -127,6 +127,42 @@ class ForwardSmsUseCaseTest {
         assertTrue(sender.sent.isEmpty())
     }
 
+    // --- ad filter -------------------------------------------------------------
+
+    private val ad = "Kampanya firsati! Detay: https://qnb.mn/x SMSRET->3639 MERSIS: 0388002333400576 B001"
+
+    @Test
+    fun `advertising sms is dropped when the ad filter is on`() = runBlocking {
+        useCase(deliveredSms(sender = "QNB", body = ad))
+
+        assertTrue(sender.sent.isEmpty())
+    }
+
+    @Test
+    fun `advertising sms is forwarded when the ad filter is off`() = runBlocking {
+        settings.set(AppSettings(botToken = "123:SECRET", chatId = "42", adFilterEnabled = false))
+
+        useCase(deliveredSms(sender = "QNB", body = ad))
+
+        assertEquals(1, sender.sent.size)
+    }
+
+    @Test
+    fun `sms with a detected code is never filtered`() = runBlocking {
+        useCase(deliveredSms(body = "Dogrulama kodunuz: 814067. SMS RET icin 3639"))
+
+        assertEquals("814067", sender.sent.single().copyText)
+    }
+
+    @Test
+    fun `saved contact is never filtered`() = runBlocking {
+        contacts.directory["+905550001122"] = "Eyüp"
+
+        useCase(deliveredSms(sender = "+905550001122", body = ad))
+
+        assertEquals(1, sender.sent.size)
+    }
+
     // --- buffered delivery: the 5 s merging-window path ----------------------
 
     @Test

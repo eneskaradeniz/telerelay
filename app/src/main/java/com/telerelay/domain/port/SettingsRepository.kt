@@ -18,4 +18,5 @@ interface SettingsRepository {
     fun setSmsForwardingEnabled(enabled: Boolean)
     fun setCallNotificationEnabled(enabled: Boolean)
     fun setMissedCallNotificationEnabled(enabled: Boolean)
+    fun setAdFilterEnabled(enabled: Boolean)
 }

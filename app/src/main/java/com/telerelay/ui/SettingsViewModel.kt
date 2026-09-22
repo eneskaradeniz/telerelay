@@ -153,6 +153,8 @@ class SettingsViewModel @Inject constructor(
     fun setMissedCallNotificationEnabled(enabled: Boolean) =
         settingsRepository.setMissedCallNotificationEnabled(enabled)
 
+    fun setAdFilterEnabled(enabled: Boolean) = settingsRepository.setAdFilterEnabled(enabled)
+
     // --- service -----------------------------------------------------------
 
     fun startCallMonitoring() = serviceController.startCallMonitoring()

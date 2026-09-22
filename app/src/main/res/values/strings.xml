@@ -40,6 +40,8 @@
     <string name="section_forwarding">Forwarding</string>
     <string name="toggle_sms">Forward SMS</string>
     <string name="toggle_sms_hint">Works as soon as enabled; does not need the foreground service.</string>
+    <string name="toggle_ad_filter">Skip advertising SMS</string>
+    <string name="toggle_ad_filter_hint">Campaigns with opt-out wording (SMS RET, MERSIS) and betting spam are not forwarded. Codes and saved contacts always get through.</string>
     <string name="toggle_calls">Incoming call notifications</string>
     <string name="toggle_calls_hint">Needs the foreground service (started automatically).</string>
     <string name="toggle_missed">Missed call notifications</string>

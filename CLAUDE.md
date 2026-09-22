@@ -23,17 +23,18 @@ Değiştirmek istersen önce kullanıcıya sor, gerekçeni açıkla.
 | READ_CONTACTS | Eklendi (kullanıcı onayladı, 2026-09-16 revizyon turu): kayıtlı kişiler iletilen mesajda adla görünür; arama yalnızca cihazda yapılır |
 | Mesaj formatı | Compact: `📩 <b>gönderen</b>[ · SIMn]\nbody` (HTML parse mode). Zaman satırı yok (Telegram kendi saatini gösterir); SIM satırı yalnızca çok-SIM'de ve biliniyorsa. Algılanan OTP koduna Telegram `copy_text` butonu eklenir |
 | Gizlilik guard + numara filtresi | KALDIRILDI (kullanıcı kararı, 2026-09-16) — regex filtre/maskeleme ve hariç tutulan numaralar özelliği yok; OTP algılama yalnızca copy butonu için, maskeleme yok |
+| Reklam SMS filtresi | EKLENDİ (kullanıcı kararı, 2026-09-23) — tek toggle, varsayılan açık, reklam **iletilmez** (sessiz iletme değil). Sabit kural seti (`AdSmsDetector`): İYS ret talimatı/MERSIS + bahis spam'i. Kullanıcının düzenlediği regex/numara listesi YOK (2026-09-16 kararı geçerli). OTP algılanan veya kayıtlı kişiden gelen SMS asla filtrelenmez |
 
 ## Komutlar
 
 ```bash
 ./gradlew :app:assembleDebug        # debug APK
-./gradlew :app:testDebugUnitTest    # 67 test — sayı düşerse sebebi açıkla (65→36 gizlilik guard silinmesi, sonra 67 yeni pipeline testleriyle)
+./gradlew :app:testDebugUnitTest    # 97 test — sayı düşerse sebebi açıkla (65→36 gizlilik guard silinmesi, 67 pipeline, 78 OTP, 97 reklam filtresi)
 ./gradlew :app:assembleRelease      # minify'lı (unsigned)
 ```
 
-AGP **9.2.1**: kullanıcının Android Studio'su daha yenisini desteklemiyor.
-AGP yükseltmeden önce Studio'nun AGP uyum tablosunu kontrol et; gerekirse
+AGP **9.4.1** (2026-09-23 kullanıcı 9.2.1'den yükseltti; öncesinde Studio
+9.2.1'den yenisini desteklemiyordu). AGP yükseltmeden önce Studio'nun AGP uyum tablosunu kontrol et; gerekirse
 önce Studio güncellemesini iste.
 
 ## Tarihli tuzak kuralları (her biri gerçek hata — silme, üstüne ekleme)
@@ -96,6 +97,14 @@ AGP yükseltmeden önce Studio'nun AGP uyum tablosunu kontrol et; gerekirse
 - **2026-09-16** (gerçek cihaz) Sideload APK'da SMS/CallLog izni
   kilitlenince açma yolu README Kurulum adımına işlendi (Ayarlar →
   Uygulamalar → ⋮ → Kısıtlanmış izinlere izin ver).
+- **2026-09-23** (gerçek trafik) Spam engelleyici uygulamalar TeleRelay'i
+  durdurmaz: yalnızca varsayılan SMS uygulamasının `SMS_DELIVER`'ını
+  etkilerler, `SMS_RECEIVED` yine gelir. Filtre TeleRelay'de olmak zorunda.
+  Reklam ayırıcısı İYS zorunlu ret talimatı (SMSRET, "Ret icin", "IPTAL yaz",
+  MERSIS); tek başına "iptal" veya "almak istemiyorsaniz" işaret DEĞİL
+  (Turkcell paket/iptal bilgi SMS'lerini yakalıyordu). "bahis" kelimesi
+  işaret DEĞİL (Ziraat dolandırıcılık uyarısında geçiyor). `İ` harfi
+  `lowercase()` ile `i` olmaz → metin önce Türkçe-ASCII fold edilir.
 
 ## Güvenlik kuralları
 
@@ -139,7 +148,7 @@ AGP yükseltmeden önce Studio'nun AGP uyum tablosunu kontrol et; gerekirse
   dahil) kapatıldı. 67 test yeşil.
 - ✅ Release altyapısı (2026-09-16): `telerelay-release.keystore` +
   `keystore.properties` gitignored, local'de durur; build.gradle ikisi varsa
-  release'ı imzalar, yoksa unsigned bırakır (CI için). v1.1.0 (versionCode 2)
+  release'ı imzalar, yoksa unsigned bırakır (CI için). v1.1.0 (versionCode 2) … v1.2.0 (versionCode 5, reklam filtresi)
   etiketi + GitHub Release yayınlandı.
 - ⏳ **Kullanıcının kaydetmesi gereken sırrı:** `telerelay-release.keystore`
   ve `keystore.properties` (içinde store password) — bunlar kaybolursa
@@ -153,7 +162,7 @@ AGP yükseltmeden önce Studio'nun AGP uyum tablosunu kontrol et; gerekirse
 
 ## Dosya haritası (hızlı)
 
-- `domain/logic/` — saf Kotlin test hedefleri (assembler, state machine, formatter, OTP detector)
+- `domain/logic/` — saf Kotlin test hedefleri (assembler, state machine, formatter, OTP detector, ad detector)
 - `domain/usecase/` — ForwardSms / ForwardCall
 - `data/telegram/` — gateway + rate limiter + Retrofit arayüzü + DTO'lar (HTML parse mode + copy_text)
 - `data/crypto/` — Keystore AES-GCM
